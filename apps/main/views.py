@@ -1,19 +1,10 @@
 from django.shortcuts import render, HttpResponse, redirect
 from django.views.decorators.csrf import csrf_exempt
-from html.parser import HTMLParser
+from .parser import *
 from .models import *
 
-class MyParser(HTMLParser):
-    def handle_starttag(self, tag, attrs):
-        if tag == 'button':
-            for attr in attrs:
-                if attr[0] == 'aria-label' and 'Wanna Get Away' in attr[1]:
-                    print(attr[1])
 
-    def handle_data(self, data):
-        # print(data)
-        pass
-    
+
 
 def index(request):
     return HttpResponse('Hello world!')
@@ -46,16 +37,29 @@ def parserTest(request):
 
 @csrf_exempt
 def startFareSearch(request):
-    # print(request.POST['userEmail'])
     if request.method == 'POST':
-        FareSearch.objects.create(
-            userEmail = request.POST['userEmail'],
-            userPhone = request.POST['userPhone'],
-            originAirport = request.POST['originAirport'],
-            destinationAirport = request.POST['destinationAirport'],
-            departureDate = request.POST['departingDate'],
-            returnDate = request.POST['returningDate']
-        )
+        parser = MyParser()
+        parser.findWannaGetAway(request.POST['siteData'])
+        if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
+            return HttpResponse("Failure")
+        
+        else:
+            errors = FareSearch.objects.emailPhoneVal(request.POST)
+            if errors:
+                return HttpResponse("Form error")
+            else:
+                search = FareSearch.objects.create(
+                    userEmail = request.POST['userEmail'],
+                    userPhone = request.POST['userPhone'],
+                    originAirport = request.POST['originAirport'],
+                    destinationAirport = request.POST['destinationAirport'],
+                    departureDate = request.POST['departingDate'],
+                    returnDate = request.POST['returningDate'],
+                    lowestPrice = parser.lowestPrice,
+                    averagePrice = parser.averagePrice
+                )
 
-        print(FareSearch.objects.last().userEmail)
-    return HttpResponse("Created new search!")
+                # print(search.averagePrice, search.lowestPrice)
+                return HttpResponse("Created new search!")
+
+    
