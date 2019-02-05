@@ -10,3 +10,5 @@ class FareSearch(models.Model):
     returnDate = models.CharField(max_length = 20)
     lowestPrice = models.IntegerField(default = 0)
     averagePrice = models.IntegerField(default = 0)
+
+

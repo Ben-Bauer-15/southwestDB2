@@ -46,16 +46,16 @@ def parserTest(request):
 
 @csrf_exempt
 def startFareSearch(request):
-    print(request.POST['userEmail'])
-    # if request.method == 'POST':
-    #     FareSearch.objects.create(
-    #         userEmail = 'ben',
-    #         userPhone = 'ben',
-    #         originAirport = 'den',
-    #         destinationAirport = 'den',
-    #         departureDate = 'den',
-    #         returningDate = 'den'
-    #     )
+    # print(request.POST['userEmail'])
+    if request.method == 'POST':
+        FareSearch.objects.create(
+            userEmail = request.POST['userEmail'],
+            userPhone = request.POST['userPhone'],
+            originAirport = request.POST['originAirport'],
+            destinationAirport = request.POST['destinationAirport'],
+            departureDate = request.POST['departingDate'],
+            returnDate = request.POST['returningDate']
+        )
 
-    #     print(FareSearch.objects.last())
+        print(FareSearch.objects.last().userEmail)
     return HttpResponse("Created new search!")

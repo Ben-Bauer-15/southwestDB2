@@ -6,5 +6,4 @@ urlpatterns = [
     url(r'^test$', views.test),
     url(r'^parserTest', views.parserTest),
     url(r'startFareSearch', views.startFareSearch)
-
 ]
