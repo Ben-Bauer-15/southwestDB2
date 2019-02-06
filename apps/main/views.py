@@ -2,18 +2,18 @@ from django.shortcuts import render, HttpResponse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from .parser import *
 from .models import *
+from .schedule import scheduler
+import threading
+import time
 
-
-
-
-def index(request):
+def index(req):
     return HttpResponse('Hello world!')
 
 
 @csrf_exempt
-def test(request):
-    if request.method == "POST":    
-        print(request.POST)
+def test(req):
+    if req.method == "POST":
+        print(req.POST)
         return HttpResponse("Success")
 
     else:
@@ -22,44 +22,48 @@ def test(request):
 
 
 @csrf_exempt
-def parserTest(request):
-    if request.method == 'POST':
-        print(request.POST)
-        # print(request.POST['userPhone'])
-        # parser = MyParser()
-
-        # parser.feed(request.POST['data'])
-
-
-        return HttpResponse("Success!")
-
-
-
-@csrf_exempt
-def startFareSearch(request):
-    if request.method == 'POST':
+def startFareSearch(req):
+    if req.method == 'POST':
         parser = MyParser()
-        parser.findWannaGetAway(request.POST['siteData'])
+        parser.findWannaGetAway(req.POST['siteData'])
         if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
             return HttpResponse("Failure")
         
         else:
-            errors = FareSearch.objects.emailPhoneVal(request.POST)
-            if errors:
-                return HttpResponse("Form error")
-            else:
-                search = FareSearch.objects.create(
-                    userEmail = request.POST['userEmail'],
-                    userPhone = request.POST['userPhone'],
-                    originAirport = request.POST['originAirport'],
-                    destinationAirport = request.POST['destinationAirport'],
-                    departureDate = request.POST['departingDate'],
-                    returnDate = request.POST['returningDate'],
-                    lowestPrice = parser.lowestPrice,
-                    averagePrice = parser.averagePrice
-                )
+            search = FareSearch.objects.create(
+                userEmail = req.POST['userEmail'],
+                userPhone = req.POST['userPhone'],
+                originAirport = req.POST['originAirport'],
+                destinationAirport = req.POST['destinationAirport'],
+                departureDate = req.POST['departingDate'],
+                returnDate = req.POST['returningDate'],
+                lowestPrice = parser.lowestPrice,
+                averagePrice = parser.averagePrice
+            )
 
-                # print(search.averagePrice, search.lowestPrice)
-                return HttpResponse("Created new search!")
+            # print(search.averagePrice, search.lowestPrice)
+            return HttpResponse("Created new search!")
 
+@csrf_exempt
+def validateUserContact(req):
+    if req.method == 'POST':
+        errors = FareSearch.objects.emailPhoneVal(req.POST)
+        if errors:
+            return HttpResponse("Form error")
+
+        else:
+            return HttpResponse("Success")
+    else:
+        return HttpResponse("Error")
+
+
+
+
+
+def testThread(threadName, id):
+    while True:
+        print('testing a thread with name', threadName)
+        print("id param is ", id)
+        time.sleep(5)
     
+threading._start_new_thread(testThread, ("New thread", 1))

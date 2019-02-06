@@ -26,4 +26,6 @@ class FareSearch(models.Model):
     returnDate = models.CharField(max_length = 20)
     lowestPrice = models.IntegerField(default = 0)
     averagePrice = models.FloatField(default = 0)
+    createdAt = models.DateTimeField(auto_now_add = True)
+    updatedAt = models.DateTimeField(auto_now_add = True)
     objects = FareSearchManager()
