@@ -7,6 +7,7 @@ import threading
 import urllib
 import time
 
+
 def index(req):
     return HttpResponse('Hello world!')
 
@@ -14,11 +15,9 @@ def index(req):
 @csrf_exempt
 def test(req):
     if req.method == "POST":
-        print(req.POST)
         return HttpResponse("Success")
 
     else:
-        print("error")
         return HttpResponse("error")
 
 
@@ -38,7 +37,8 @@ def startFareSearch(req):
                 originAirport = req.POST['originAirport'],
                 destinationAirport = req.POST['destinationAirport'],
                 departureDate = req.POST['departingDate'],
-                returnDate = req.POST['returningDate']
+                returnDate = req.POST['returningDate'],
+                lowestPrice = parser.lowestPrice
             )
 
             AveragePrice.objects.create(
@@ -53,8 +53,8 @@ def startFareSearch(req):
 
             search.save()
 
-
             return HttpResponse("Created new search!")
+
 
 @csrf_exempt
 def validateUserContact(req):
@@ -87,31 +87,23 @@ def updateFareSearch(req):
                 price = parser.averagePrice
             )
 
-            LowestPrice.objects.create(
-                search = search,
-                price = parser.lowestPrice
-            )
+            if parser.lowestPrice < search.lowestPrice:
+                search.lowestPrice = parser.lowestPrice
+                sendLowPriceText(search)
 
             search.save()
-
-            print('***********\n\n')
-            for low in search.lowestPrices.all():
-                print(low.price)
-            for avg in search.averagePrices.all():
-                print(avg.price)
-
-            print('\n\n**********')
-
 
             return HttpResponse("Updated search query!")
 
     else:
-        print("Error on update fare search")
         return HttpResponse("Error")
 
 
 
 def recheckFares(threadName, id):
+    SECONDS = 60
+    MINUTES = 60
+    HOURS = 24
     while True:
         searches = FareSearch.objects.all()
         for search in searches:
@@ -125,6 +117,22 @@ def recheckFares(threadName, id):
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
             result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
 
-        time.sleep(5)
+        
+        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
+        time.sleep(SECONDS * MINUTES * HOURS)
     
+
 threading._start_new_thread(recheckFares, ("New thread", 1))
+
+
+def sendLowPriceText(search):
+    postData = {'userPhone' : search.userPhone,
+                'userEmail' : search.userEmail,
+                'originAirport' : search.originAirport,
+                'destinationAirport' : search.destinationAirport,
+                'departingDate' : search.departureDate,
+                'returningDate' : search.returnDate}
+
+    encoded = bytes( urllib.parse.urlencode(postData).encode() )
+    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
+    print(result.read())

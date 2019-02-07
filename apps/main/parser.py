@@ -36,7 +36,6 @@ class MyParser(HTMLParser):
         
         self.lowestPrice = self.findLowestPrice(self.prunedFares)
         self.averagePrice = self.findAveragePrice(self.prunedFares)
-        print(self.lowestPrice, self.averagePrice)
 
 
     def findLowestPrice(self, array):
