@@ -2,8 +2,9 @@ from django.shortcuts import render, HttpResponse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from .parser import *
 from .models import *
-from .schedule import scheduler
+from datetime import datetime
 import threading
+import urllib
 import time
 
 def index(req):
@@ -26,6 +27,7 @@ def startFareSearch(req):
     if req.method == 'POST':
         parser = MyParser()
         parser.findWannaGetAway(req.POST['siteData'])
+
         if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
             return HttpResponse("Failure")
         
@@ -36,12 +38,22 @@ def startFareSearch(req):
                 originAirport = req.POST['originAirport'],
                 destinationAirport = req.POST['destinationAirport'],
                 departureDate = req.POST['departingDate'],
-                returnDate = req.POST['returningDate'],
-                lowestPrice = parser.lowestPrice,
-                averagePrice = parser.averagePrice
+                returnDate = req.POST['returningDate']
             )
 
-            # print(search.averagePrice, search.lowestPrice)
+            AveragePrice.objects.create(
+                search = search,
+                price = parser.averagePrice
+            )
+
+            LowestPrice.objects.create(
+                search = search,
+                price = parser.lowestPrice
+            )
+
+            search.save()
+
+
             return HttpResponse("Created new search!")
 
 @csrf_exempt
@@ -57,13 +69,62 @@ def validateUserContact(req):
         return HttpResponse("Error")
 
 
+@csrf_exempt
+def updateFareSearch(req):
+    if req.method == 'POST':
+        parser = MyParser()
+        parser.findWannaGetAway(req.POST['siteData'])
+        
+        if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
+            return HttpResponse("Failure")
+        
+        else:
+            search = FareSearch.objects.get(id = req.POST['id'])
+            search.updatedAt = datetime.now()
+
+            AveragePrice.objects.create(
+                search = search,
+                price = parser.averagePrice
+            )
+
+            LowestPrice.objects.create(
+                search = search,
+                price = parser.lowestPrice
+            )
+
+            search.save()
+
+            print('***********\n\n')
+            for low in search.lowestPrices.all():
+                print(low.price)
+            for avg in search.averagePrices.all():
+                print(avg.price)
+
+            print('\n\n**********')
+
+
+            return HttpResponse("Updated search query!")
+
+    else:
+        print("Error on update fare search")
+        return HttpResponse("Error")
 
 
 
-def testThread(threadName, id):
+def recheckFares(threadName, id):
     while True:
-        print('testing a thread with name', threadName)
-        print("id param is ", id)
+        searches = FareSearch.objects.all()
+        for search in searches:
+            postData = {'originAirport' : search.originAirport,
+                        'destinationAirport' : search.destinationAirport,
+                        'departingDate' : search.departureDate,
+                        'returningDate' : search.returnDate,
+                        'id' : search.id}
+
+                        
+            encoded = bytes( urllib.parse.urlencode(postData).encode() )
+            result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+
         time.sleep(5)
     
-threading._start_new_thread(testThread, ("New thread", 1))
+threading._start_new_thread(recheckFares, ("New thread", 1))

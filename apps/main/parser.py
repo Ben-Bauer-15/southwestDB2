@@ -1,7 +1,7 @@
 from html.parser import HTMLParser
 import re
 
-PRICE_REGEX = re.compile(r'^[0-9]+.+[0-9]+ Dollars+$')
+PRICE_REGEX = re.compile(r'^[0-9]\d+$')
 
 class MyParser(HTMLParser):
 
@@ -12,7 +12,9 @@ class MyParser(HTMLParser):
                 if attr[0] == 'aria-label' and 'Wanna Get Away' in attr[1]:
                     self.foundWannaGetAway = True
 
+
     def handle_data(self, data):
+        
         if self.foundWannaGetAway:
             self.rawFares.append(data)
 
@@ -29,15 +31,12 @@ class MyParser(HTMLParser):
         self.feed(data)
         for price in self.rawFares:
             if PRICE_REGEX.match(price):
-                index = 0
-                for i in range(len(price)):
-                    if price[i] == '.':
-                        index = i
+                self.prunedFares.append(int(price))
 
-                self.prunedFares.append(int(price[0:index]))
         
         self.lowestPrice = self.findLowestPrice(self.prunedFares)
         self.averagePrice = self.findAveragePrice(self.prunedFares)
+        print(self.lowestPrice, self.averagePrice)
 
 
     def findLowestPrice(self, array):

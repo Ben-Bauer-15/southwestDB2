@@ -5,5 +5,6 @@ urlpatterns = [
     url(r'^$', views.index),
     url(r'^test$', views.test),
     url(r'startFareSearch', views.startFareSearch),
-    url(r'validate', views.validateUserContact)
+    url(r'validate', views.validateUserContact),
+    url(r'updateFareSearch', views.updateFareSearch)
 ]
