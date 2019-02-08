@@ -6,6 +6,8 @@ from datetime import datetime
 import threading
 import urllib
 import time
+from django.http import JsonResponse
+
 
 
 def index(req):
@@ -41,6 +43,7 @@ def startFareSearch(req):
                 lowestPrice = parser.lowestPrice
             )
 
+
             AveragePrice.objects.create(
                 search = search,
                 price = parser.averagePrice
@@ -59,12 +62,16 @@ def startFareSearch(req):
 @csrf_exempt
 def validateUserContact(req):
     if req.method == 'POST':
-        errors = FareSearch.objects.emailPhoneVal(req.POST)
+        errors = FareSearch.objects.emailPhoneVal(req.POST)[1]
+        user = FareSearch.objects.emailPhoneVal(req.POST)[0]
         if errors:
             return HttpResponse("Form error")
 
+        elif len(user) > 0:
+            return HttpResponse("User in DB")
+        
         else:
-            return HttpResponse("Success")
+            return HttpResponse("New user")
     else:
         return HttpResponse("Error")
 
@@ -87,18 +94,53 @@ def updateFareSearch(req):
                 price = parser.averagePrice
             )
 
+            print(search.lowestPrice)
+
             if parser.lowestPrice < search.lowestPrice:
                 search.lowestPrice = parser.lowestPrice
                 sendLowPriceText(search)
-
+            
             search.save()
+
+            print(search.lowestPrice)
 
             return HttpResponse("Updated search query!")
 
     else:
         return HttpResponse("Error")
 
+@csrf_exempt
+def findSearches(req):
+    if req.method == 'POST':
+        response = {}
+        searches = FareSearch.objects.filter(userPhone = req.POST['userPhone'])
+        for i in range(len(searches)):
+            
+            response[i] = [searches[i].originAirport, 
+                            searches[i].destinationAirport, 
+                            searches[i].departureDate, 
+                            searches[i].returnDate]
 
+        return JsonResponse(response)
+
+
+    else:
+        return HttpResponse("Error")
+
+@csrf_exempt
+def delete(req):
+    if req.method == 'POST':
+        
+        searches = FareSearch.objects.filter(userPhone = req.POST['userPhone'])
+        id = int(req.POST['searchID'])
+        searchToDelete = searches[id]
+
+        searchToDelete.delete()
+
+        return HttpResponse("Success")
+
+    else:
+        return HttpResponse('Error')
 
 def recheckFares(threadName, id):
     SECONDS = 60
@@ -113,7 +155,6 @@ def recheckFares(threadName, id):
                         'returningDate' : search.returnDate,
                         'id' : search.id}
 
-                        
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
             result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
 
@@ -122,7 +163,7 @@ def recheckFares(threadName, id):
         time.sleep(SECONDS * MINUTES * HOURS)
     
 
-threading._start_new_thread(recheckFares, ("New thread", 1))
+# threading._start_new_thread(recheckFares, ("New thread", 1))
 
 
 def sendLowPriceText(search):

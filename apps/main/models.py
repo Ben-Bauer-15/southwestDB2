@@ -14,7 +14,13 @@ class FareSearchManager(models.Manager):
         if not PHONE_REGEX.match(postData['userPhone']):
             errors['phone'] = 'Not a valid phone number'
 
-        return errors
+
+        user = FareSearch.objects.filter(userPhone = postData['userPhone'])
+        return (user, errors)
+    
+
+
+            
 
 
 class FareSearch(models.Model):
