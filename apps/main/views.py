@@ -7,11 +7,17 @@ import threading
 import urllib
 import time
 from django.http import JsonResponse
+from .scraper import *
+
 
 
 
 def index(req):
     return HttpResponse('Hello world!')
+
+def testOpenFile(req):
+    readFile()
+    return HttpResponse('Success!')
 
 
 @csrf_exempt
