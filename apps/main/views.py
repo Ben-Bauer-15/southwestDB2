@@ -7,7 +7,7 @@ import threading
 import urllib
 import time
 from django.http import JsonResponse
-from .scraper import *
+from .searchGenerator import *
 
 
 
@@ -15,9 +15,41 @@ from .scraper import *
 def index(req):
     return HttpResponse('Hello world!')
 
-def testOpenFile(req):
-    readFile()
-    return HttpResponse('Success!')
+
+def generateSearches(req):
+    scraper = SearchGenerator()
+    searches = scraper.generateSearches()
+    numSearches = 0
+    numDates = 0
+    while numSearches < 1:
+        # print(numSearches)  
+        airports = searches[numSearches][0]
+        originAirport = airports[0]
+        destinationAirport = airports[1]
+        dates = searches[numSearches][1]
+        print(dates)
+        while numDates < 3:
+
+            date = dates[numDates]
+            
+            postData = {'originAirport' : originAirport,
+                        'destinationAirport' : destinationAirport,
+                        'departingDate' : date,
+                        'tripType' : 'oneWay'
+                        }
+
+
+            encoded = bytes( urllib.parse.urlencode(postData).encode() )
+            result = urllib.request.urlopen('http://127.0.0.1:4000/startFareSearch', encoded)
+            print(result.read())
+
+            numDates += 1
+        
+
+        numSearches += 1
+    return HttpResponse("Success!")
+
+
 
 
 @csrf_exempt
@@ -120,14 +152,19 @@ def findSearches(req):
     if req.method == 'POST':
         response = {}
         searches = FareSearch.objects.filter(userPhone = req.POST['userPhone'])
-        for i in range(len(searches)):
-            
-            response[i] = [searches[i].originAirport, 
-                            searches[i].destinationAirport, 
-                            searches[i].departureDate, 
-                            searches[i].returnDate]
+        if len(searches) == 0:
+            return HttpResponse("No searches found")
+        
+        else:
 
-        return JsonResponse(response)
+            for i in range(len(searches)):
+                
+                response[i] = [searches[i].originAirport, 
+                                searches[i].destinationAirport, 
+                                searches[i].departureDate, 
+                                searches[i].returnDate]
+
+            return JsonResponse(response)
 
 
     else:
@@ -138,12 +175,22 @@ def delete(req):
     if req.method == 'POST':
         
         searches = FareSearch.objects.filter(userPhone = req.POST['userPhone'])
+
         id = int(req.POST['searchID'])
-        searchToDelete = searches[id]
+        print('id requested is ', id, ' length of searches is ', len(searches))
 
-        searchToDelete.delete()
 
-        return HttpResponse("Success")
+        if (id > len(searches) - 1) or (id < 0):
+            print("invalid!")
+            return HttpResponse("Invalid search ID")
+        
+
+        else:
+            searchToDelete = searches[id]
+
+            searchToDelete.delete()
+
+            return HttpResponse("Success")
 
     else:
         return HttpResponse('Error')

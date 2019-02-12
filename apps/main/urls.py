@@ -9,5 +9,5 @@ urlpatterns = [
     url(r'^updateFareSearch$', views.updateFareSearch),
     url(r'^findSearches$', views.findSearches),
     url(r'^delete$', views.delete),
-    url(r'^testScraper$', views.testOpenFile)
+    url(r'^generateSearches$', views.generateSearches)
 ]
