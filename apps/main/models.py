@@ -45,3 +45,25 @@ class LowestPrice(models.Model):
     search = models.ForeignKey(FareSearch, related_name = 'lowestPrices', on_delete = models.CASCADE)
     createdAt = models.DateTimeField(auto_now_add = True)
     price = models.FloatField()
+
+
+class Trip(models.Model):
+    originAirport = models.CharField(max_length = 5)
+    destinationAirport = models.CharField(max_length = 5)
+    tripDate = models.DateTimeField()
+    numFlights = models.IntegerField(default = 0)
+    createdAt = models.DateTimeField(auto_now_add = True)
+    updatedAt = models.DateTimeField(auto_now_add = True)
+
+
+class Flight(models.Model):
+    departTime = models.TimeField()
+    arriveTime = models.TimeField()
+    duration = models.DurationField()
+    businessFare = models.FloatField()
+    anytimeFare = models.FloatField()
+    wannaGetAwayFare = models.FloatField()
+    numStops = models.IntegerField()
+    createdAt = models.DateTimeField(auto_now_add = True)
+    updatedAt = models.DateTimeField(auto_now_add = True)
+    trip = models.ForeignKey(Trip, related_name = 'flights', on_delete = models.CASCADE)

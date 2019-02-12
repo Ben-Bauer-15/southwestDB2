@@ -8,6 +8,7 @@ import urllib
 import time
 from django.http import JsonResponse
 from .searchGenerator import *
+import json
 
 
 
@@ -19,15 +20,15 @@ def index(req):
 def generateSearches(req):
     scraper = SearchGenerator()
     searches = scraper.generateSearches()
-    numSearches = 0
-    numDates = 0
-    while numSearches < 1:
+    for numSearches in range(4,5):
         # print(numSearches)  
         airports = searches[numSearches][0]
         originAirport = airports[0]
         destinationAirport = airports[1]
         dates = searches[numSearches][1]
-        while numDates < 1:
+
+        for numDates in range(7,8):
+            
 
             date = dates[numDates]
             
@@ -37,16 +38,34 @@ def generateSearches(req):
                         'tripType' : 'oneWay'
                         }
 
+            trip = Trip.objects.create(
+                originAirport = originAirport,
+                destinationAirport = destinationAirport,
+                tripDate = date
+            )
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://southwest.ben-bauer.net/startFareSearch', encoded)
+            result = urllib.request.urlopen('http://127.0.0.1:4000/startFareSearch', encoded)
             parser = MyParser()
-            # parser.parseDocument()
+            responseStr = result.read().decode('utf-8')
+            jsonResp = json.loads(responseStr)
+            parserData = parser.parseDocument(jsonResp['message'])
 
-            numDates += 1
-        
+            for flightObj in parserData:
+                flight = Flight.objects.create(
+                    departTime = flightObj['departs'],
+                    arriveTime = flightObj['arrives'],
+                    duration = flightObj['duration'],
+                    businessFare = flightObj['business'],
+                    anytimeFare = flightObj['anytime'],
+                    wannaGetAwayFare = flightObj['wanna'],
+                    numStops = flightObj['stops'],
+                    trip = trip
+                )
+                flight.save()
+                
 
-        numSearches += 1
+
     return HttpResponse("Success!")
 
 
@@ -209,7 +228,7 @@ def recheckFares(threadName, id):
                         'id' : search.id}
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
+            result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
 
         
         print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
@@ -228,5 +247,5 @@ def sendLowPriceText(search):
                 'returningDate' : search.returnDate}
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
-    result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
+    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
     print(result.read())
