@@ -27,8 +27,7 @@ def generateSearches(req):
         originAirport = airports[0]
         destinationAirport = airports[1]
         dates = searches[numSearches][1]
-        print(dates)
-        while numDates < 3:
+        while numDates < 1:
 
             date = dates[numDates]
             
@@ -41,7 +40,8 @@ def generateSearches(req):
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
             result = urllib.request.urlopen('http://southwest.ben-bauer.net/startFareSearch', encoded)
-            print(result.read())
+            parser = MyParser()
+            # parser.parseDocument()
 
             numDates += 1
         
