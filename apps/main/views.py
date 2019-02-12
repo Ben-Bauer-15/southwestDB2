@@ -40,7 +40,7 @@ def generateSearches(req):
 
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://127.0.0.1:4000/startFareSearch', encoded)
+            result = urllib.request.urlopen('http://southwest.ben-bauer.net/startFareSearch', encoded)
             print(result.read())
 
             numDates += 1
@@ -209,7 +209,7 @@ def recheckFares(threadName, id):
                         'id' : search.id}
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+            result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
 
         
         print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
@@ -228,5 +228,5 @@ def sendLowPriceText(search):
                 'returningDate' : search.returnDate}
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
-    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
+    result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
     print(result.read())
