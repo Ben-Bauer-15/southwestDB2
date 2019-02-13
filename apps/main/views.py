@@ -9,6 +9,9 @@ import time
 from django.http import JsonResponse
 from .searchGenerator import *
 import json
+SECONDS = 60
+MINUTES = 60
+HOURS = 24
 
 
 
@@ -17,57 +20,67 @@ def index(req):
     return HttpResponse('Hello world!')
 
 
-def generateSearches(req):
-    scraper = SearchGenerator()
-    searches = scraper.generateSearches()
-    for numSearches in range(4,5):
-        # print(numSearches)  
-        airports = searches[numSearches][0]
-        originAirport = airports[0]
-        destinationAirport = airports[1]
-        dates = searches[numSearches][1]
+def fillDatabase(thread, number):
+    while True:
+        scraper = SearchGenerator()
+        searches = scraper.generateSearches()
+        for numSearches in range(2):
+            airports = searches[numSearches][0]
+            originAirport = airports[0]
+            destinationAirport = airports[1]
+            dates = searches[numSearches][1]
 
-        for numDates in range(7,8):
-            
+            print("\n\n *********Searching for airports: ", originAirport, destinationAirport, "**************\n\n")
 
-            date = dates[numDates]
-            
-            postData = {'originAirport' : originAirport,
-                        'destinationAirport' : destinationAirport,
-                        'departingDate' : date,
-                        'tripType' : 'oneWay'
-                        }
-
-            trip = Trip.objects.create(
-                originAirport = originAirport,
-                destinationAirport = destinationAirport,
-                tripDate = date
-            )
-
-            encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://127.0.0.1:4000/startFareSearch', encoded)
-            parser = MyParser()
-            responseStr = result.read().decode('utf-8')
-            jsonResp = json.loads(responseStr)
-            parserData = parser.parseDocument(jsonResp['message'])
-
-            for flightObj in parserData:
-                flight = Flight.objects.create(
-                    departTime = flightObj['departs'],
-                    arriveTime = flightObj['arrives'],
-                    duration = flightObj['duration'],
-                    businessFare = flightObj['business'],
-                    anytimeFare = flightObj['anytime'],
-                    wannaGetAwayFare = flightObj['wanna'],
-                    numStops = flightObj['stops'],
-                    trip = trip
-                )
-                flight.save()
+            for numDates in range(len(dates)):
                 
 
+                date = dates[numDates]
+                
+                postData = {'originAirport' : originAirport,
+                            'destinationAirport' : destinationAirport,
+                            'departingDate' : date,
+                            'tripType' : 'oneWay'
+                            }
 
-    return HttpResponse("Success!")
+                trip = Trip.objects.create(
+                    originAirport = originAirport,
+                    destinationAirport = destinationAirport,
+                    tripDate = date
+                )
 
+                encoded = bytes( urllib.parse.urlencode(postData).encode() )
+                result = urllib.request.urlopen('http://127.0.0.1:4000/startFareSearch', encoded)
+                parser = MyParser()
+                responseStr = result.read().decode('utf-8')
+                jsonResp = json.loads(responseStr)
+
+                if jsonResp['message'] == 'Failure':
+                    pass
+                
+                else:
+                    parserData = parser.parseDocument(jsonResp['message'])
+
+                    for flightObj in parserData:
+                        flight = Flight.objects.create(
+                            departTime = flightObj['departs'],
+                            arriveTime = flightObj['arrives'],
+                            duration = flightObj['duration'],
+                            businessFare = flightObj['business'],
+                            anytimeFare = flightObj['anytime'],
+                            wannaGetAwayFare = flightObj['wanna'],
+                            numStops = flightObj['stops'],
+                            trip = trip
+                        )
+                        flight.save()
+
+
+
+        print("\n\n\n\n\n***************       WE ARE DONE!!!!!!     ***************\n\n\n\n\n")
+        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
+        time.sleep(SECONDS * MINUTES * HOURS)
+
+# threading._start_new_thread(fillDatabase, ("New thread", 2))
 
 
 
@@ -97,7 +110,7 @@ def startFareSearch(req):
                 destinationAirport = req.POST['destinationAirport'],
                 departureDate = req.POST['departingDate'],
                 returnDate = req.POST['returningDate'],
-                lowestPrice = parser.lowestPrice
+                lowestPrice = 500
             )
 
 
@@ -215,9 +228,7 @@ def delete(req):
         return HttpResponse('Error')
 
 def recheckFares(threadName, id):
-    SECONDS = 60
-    MINUTES = 60
-    HOURS = 24
+    
     while True:
         searches = FareSearch.objects.all()
         for search in searches:
@@ -234,6 +245,7 @@ def recheckFares(threadName, id):
         print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
         time.sleep(SECONDS * MINUTES * HOURS)
     
+
 
 # threading._start_new_thread(recheckFares, ("New thread", 1))
 

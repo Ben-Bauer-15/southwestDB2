@@ -57,9 +57,9 @@ class Trip(models.Model):
 
 
 class Flight(models.Model):
-    departTime = models.TimeField()
-    arriveTime = models.TimeField()
-    duration = models.DurationField()
+    departTime = models.CharField(max_length = 50)
+    arriveTime = models.CharField(max_length = 50)
+    duration = models.CharField(max_length = 50)
     businessFare = models.FloatField()
     anytimeFare = models.FloatField()
     wannaGetAwayFare = models.FloatField()

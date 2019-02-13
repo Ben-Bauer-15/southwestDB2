@@ -8,6 +8,5 @@ urlpatterns = [
     url(r'^validate$', views.validateUserContact),
     url(r'^updateFareSearch$', views.updateFareSearch),
     url(r'^findSearches$', views.findSearches),
-    url(r'^delete$', views.delete),
-    url(r'^generateSearches$', views.generateSearches)
+    url(r'^delete$', views.delete)
 ]

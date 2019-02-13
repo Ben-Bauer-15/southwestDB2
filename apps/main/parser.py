@@ -5,6 +5,17 @@ PRICE_REGEX = re.compile(r'^[0-9]\d+$')
 
 class MyParser(HTMLParser):
 
+    def __init__(self):
+
+        self.foundLineItem = False
+        self.foundDepartingTime = False
+        self.foundArrivalTime = False
+        self.foundDuration = False
+        self.foundFares = False
+        self.foundBusiness = False
+        self.foundAnytime = False
+        self.foundWannaGetAway = False
+
     def handle_starttag(self, tag, attrs):
         
         if tag == 'button':
@@ -16,16 +27,15 @@ class MyParser(HTMLParser):
                         if self.mode == 'wholeDoc':
                             self.documentData[self.flightNum].append('Wanna Get Away fare')
                 
-                    elif 'Business Select fare' in attr[1]:
+                    elif 'Business Select fare' in attr[1] and self.mode == 'wholeDoc':
                         self.foundBusiness = True
                         self.documentData[self.flightNum].append('Business Select fare')
 
-                    elif 'Anytime fare' in attr[1]:
+                    elif 'Anytime fare' in attr[1] and self.mode == 'wholeDoc':
                         self.foundAnytime = True
                         self.documentData[self.flightNum].append('Anytime fare')
 
-
-        if tag == 'li':
+        if tag == 'li' and self.mode == 'wholeDoc':
             for attr in attrs:
                 if attr[0] == 'class' and 'air-booking-select-detail' in attr[1]:
                     self.foundLineItem = True
@@ -33,7 +43,7 @@ class MyParser(HTMLParser):
                     
                     
 
-        if tag == 'div':
+        if tag == 'div' and self.mode == 'wholeDoc':
             for attr in attrs:
                 if attr[0] == 'class' and 'air-operations-time-status' in attr[1] and not self.foundArrivalTime and not self.foundDepartingTime:
                     self.foundArrivalTime = True
@@ -55,14 +65,14 @@ class MyParser(HTMLParser):
                     self.documentData[self.flightNum].append(data)
         
 
-        if self.foundBusiness or self.foundAnytime:
+        if self.foundBusiness or self.foundAnytime and self.mode == 'wholeDoc':
             if PRICE_REGEX.match(data):
                 self.documentData[self.flightNum].append(data)
 
-        if self.foundArrivalTime:
+        if self.foundArrivalTime and self.mode == 'wholeDoc':
             self.documentData[self.flightNum].append(data)
 
-        if self.foundDuration:
+        if self.foundDuration and self.mode == 'wholeDoc':
             self.documentData[self.flightNum].append(data)
         
 
@@ -130,14 +140,14 @@ class MyParser(HTMLParser):
 
     def parseDocument(self, data):
         self.mode = 'wholeDoc'
-        self.foundLineItem = False
-        self.foundDepartingTime = False
-        self.foundArrivalTime = False
-        self.foundDuration = False
-        self.foundFares = False
-        self.foundBusiness = False
-        self.foundAnytime = False
-        self.foundWannaGetAway = False
+        # self.foundLineItem = False
+        # self.foundDepartingTime = False
+        # self.foundArrivalTime = False
+        # self.foundDuration = False
+        # self.foundFares = False
+        # self.foundBusiness = False
+        # self.foundAnytime = False
+        # self.foundWannaGetAway = False
         self.flightNum = 0
 
         self.documentData = {}
@@ -154,34 +164,34 @@ class MyParser(HTMLParser):
         for flightNum in self.documentData:
             flights.append({})
 
+            flights[flightNum]['stops'] = -1
+            flights[flightNum]['business'] = -1
+            flights[flightNum]['anytime'] = -1
+            flights[flightNum]['wanna'] = -1
+
             for idx in range(len(self.documentData[flightNum])):
                 data = self.documentData[flightNum][idx]
 
-                flights[flightNum]['stops'] = -1
-                flights[flightNum]['businessSelect'] = -1
-                flights[flightNum]['anytime'] = -1
-                flights[flightNum]['wanna'] = -1
-
-                print(data)
                 if 'Departs' in data:
                     flights[flightNum]['departs'] = self.documentData[flightNum][idx + 1] + self.documentData[flightNum][idx + 2]
 
-                elif 'Arrives' in data:
+                if 'Arrives' in data:
                     flights[flightNum]['arrives'] = self.documentData[flightNum][idx + 1] + self.documentData[flightNum][idx + 2]
 
-                elif 'Duration' in data:
+                if 'Duration' in data:
                     flights[flightNum]['duration'] = self.documentData[flightNum][idx + 1]
                 
-                elif 'stop' in data:
+                if 'stop' in data:
                     flights[flightNum]['stops'] = self.documentData[flightNum][idx][0   ]
 
-                elif 'Business' in data:
+                if 'Business' in data:
                     flights[flightNum]['business'] = self.documentData[flightNum][idx + 1]
 
-                elif 'Anytime' in data:
+                if 'Anytime' in data:
                     flights[flightNum]['anytime'] = self.documentData[flightNum][idx + 1] 
 
-                elif 'Wanna' in data:
+                if 'Wanna' in data:
                     flights[flightNum]['wanna'] = self.documentData[flightNum][idx + 1]
-
+             
+        print(flights)
         return flights
