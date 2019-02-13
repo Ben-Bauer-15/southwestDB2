@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .parser import *
 from .models import *
 from datetime import datetime
-import threading
+from threading import Thread
 import urllib
 import time as _t
 from django.http import JsonResponse
@@ -17,6 +17,13 @@ HOURS = 24
 
 def index(req):
     return HttpResponse('Hello world! This is the landing page for the SWA API :)')
+
+def start_new_thread(function):
+    def decorator(*args, **kwargs):
+        t = Thread(target = function, args=args, kwargs=kwargs)
+        t.daemon = True
+        t.start()
+    return decorator
 
 
 def getAllSearches(req):
@@ -187,6 +194,7 @@ def delete(req):
         return HttpResponse('Error')
 
 
+@start_new_thread
 def recheckFares():
     
     while True:
@@ -201,7 +209,7 @@ def recheckFares():
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
 
             try:
-                result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+                result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
             
             except:
                 print('Connection refused')
@@ -209,12 +217,16 @@ def recheckFares():
         
         print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
         _t.sleep(SECONDS * MINUTES * HOURS)
-    
+
+recheckFares()
     
 def startThread(req):
     p = Process(target = recheckFares)
     p.start()
     return HttpResponse("Successfully started the new thread")
+
+
+
 
 
 
@@ -228,5 +240,5 @@ def sendLowPriceText(search):
                 'returningDate' : search.returnDate}
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
-    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
+    result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
     print(result.read())
