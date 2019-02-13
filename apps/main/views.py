@@ -208,10 +208,14 @@ def recheckFares(threadName, id):
         #CHANGE BACK TO SECONDS * MINUTES * HOURS. TESTING
         print("Sleeping for ", SECONDS, " seconds")
         _t.sleep(SECONDS)
+
+        
     
+def startThread(req):
+    threading._start_new_thread(recheckFares, ("New thread", 1))
+    return HttpResponse("Successfully started the new thread")
 
 
-threading._start_new_thread(recheckFares, ("New thread", 1))
 
 
 def sendLowPriceText(search):
