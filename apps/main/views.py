@@ -9,6 +9,8 @@ import time as _t
 from django.http import JsonResponse
 from .searchGenerator import *
 import json
+from multiprocessing import Process
+
 SECONDS = 60
 MINUTES = 60
 HOURS = 24
@@ -185,7 +187,7 @@ def delete(req):
         return HttpResponse('Error')
 
 
-def recheckFares(threadName, id):
+def recheckFares():
     
     while True:
         searches = FareSearch.objects.all()
@@ -199,20 +201,19 @@ def recheckFares(threadName, id):
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
 
             try:
-                result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
+                result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
             
             except:
                 print('Connection refused')
 
         
-        #CHANGE BACK TO SECONDS * MINUTES * HOURS. TESTING
-        print("Sleeping for ", SECONDS, " seconds")
-        _t.sleep(SECONDS)
-
-        
+        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
+        _t.sleep(SECONDS * MINUTES * HOURS)
+    
     
 def startThread(req):
-    threading._start_new_thread(recheckFares, ("New thread", 1))
+    p = Process(target = recheckFares)
+    p.start()
     return HttpResponse("Successfully started the new thread")
 
 
@@ -227,5 +228,5 @@ def sendLowPriceText(search):
                 'returningDate' : search.returnDate}
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
-    result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
+    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
     print(result.read())
