@@ -120,9 +120,12 @@ def updateFareSearch(req):
 
             if parser.lowestPrice < search.lowestPrice:
                 search.lowestPrice = parser.lowestPrice
-                sendLowPriceText(search)
-            
+                #LINE 127 BELONGS HERE INSTEAD. TESTING
+
             search.save()
+
+            #DONT FORGET TO CHANGE THIS
+            sendLowPriceText(search)
 
             print(search.lowestPrice)
 
@@ -202,8 +205,9 @@ def recheckFares(threadName, id):
                 print('Connection refused')
 
         
-        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
-        _t.sleep(SECONDS * MINUTES * HOURS)
+        #CHANGE BACK TO SECONDS * MINUTES * HOURS. TESTING
+        print("Sleeping for ", SECONDS, " seconds")
+        _t.sleep(SECONDS)
     
 
 
