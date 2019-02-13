@@ -28,7 +28,8 @@ def getAllSearches(req):
                         'originAirport' : search.originAirport,
                         'destinationAirport' : search.destinationAirport,
                         'depart' : search.departureDate,
-                        'return' : search.returnDate })
+                        'return' : search.returnDate,
+                        'lowestPrice' : search.lowestPrice })
 
     return JsonResponse(myList, safe=False)
 
