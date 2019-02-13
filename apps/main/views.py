@@ -5,7 +5,7 @@ from .models import *
 from datetime import datetime
 import threading
 import urllib
-import time
+import time as _t
 from django.http import JsonResponse
 from .searchGenerator import *
 import json
@@ -13,75 +13,8 @@ SECONDS = 60
 MINUTES = 60
 HOURS = 24
 
-
-
-
 def index(req):
-    return HttpResponse('Hello world!')
-
-
-def fillDatabase(thread, number):
-    while True:
-        scraper = SearchGenerator()
-        searches = scraper.generateSearches()
-        for numSearches in range(2):
-            airports = searches[numSearches][0]
-            originAirport = airports[0]
-            destinationAirport = airports[1]
-            dates = searches[numSearches][1]
-
-            print("\n\n *********Searching for airports: ", originAirport, destinationAirport, "**************\n\n")
-
-            for numDates in range(len(dates)):
-                
-
-                date = dates[numDates]
-                
-                postData = {'originAirport' : originAirport,
-                            'destinationAirport' : destinationAirport,
-                            'departingDate' : date,
-                            'tripType' : 'oneWay'
-                            }
-
-                trip = Trip.objects.create(
-                    originAirport = originAirport,
-                    destinationAirport = destinationAirport,
-                    tripDate = date
-                )
-
-                encoded = bytes( urllib.parse.urlencode(postData).encode() )
-                result = urllib.request.urlopen('http://127.0.0.1:4000/startFareSearch', encoded)
-                parser = MyParser()
-                responseStr = result.read().decode('utf-8')
-                jsonResp = json.loads(responseStr)
-
-                if jsonResp['message'] == 'Failure':
-                    pass
-                
-                else:
-                    parserData = parser.parseDocument(jsonResp['message'])
-
-                    for flightObj in parserData:
-                        flight = Flight.objects.create(
-                            departTime = flightObj['departs'],
-                            arriveTime = flightObj['arrives'],
-                            duration = flightObj['duration'],
-                            businessFare = flightObj['business'],
-                            anytimeFare = flightObj['anytime'],
-                            wannaGetAwayFare = flightObj['wanna'],
-                            numStops = flightObj['stops'],
-                            trip = trip
-                        )
-                        flight.save()
-
-
-
-        print("\n\n\n\n\n***************       WE ARE DONE!!!!!!     ***************\n\n\n\n\n")
-        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
-        time.sleep(SECONDS * MINUTES * HOURS)
-
-# threading._start_new_thread(fillDatabase, ("New thread", 2))
-
+    return HttpResponse('Hello world! This is the landing page for the SWA API :)')
 
 
 @csrf_exempt
@@ -90,7 +23,7 @@ def test(req):
         return HttpResponse("Success")
 
     else:
-        return HttpResponse("error")
+        return HttpResponse("error. you should only be sending a POST request here")
 
 
 @csrf_exempt
@@ -110,8 +43,9 @@ def startFareSearch(req):
                 destinationAirport = req.POST['destinationAirport'],
                 departureDate = req.POST['departingDate'],
                 returnDate = req.POST['returningDate'],
-                lowestPrice = 500
+                lowestPrice = parser.lowestPrice
             )
+
 
 
             AveragePrice.objects.create(
@@ -123,11 +57,13 @@ def startFareSearch(req):
                 search = search,
                 price = parser.lowestPrice
             )
+            print(search)
 
             search.save()
 
             return HttpResponse("Created new search!")
-
+    else:
+        return HttpResponse("Error")
 
 @csrf_exempt
 def validateUserContact(req):
@@ -202,6 +138,8 @@ def findSearches(req):
     else:
         return HttpResponse("Error")
 
+
+
 @csrf_exempt
 def delete(req):
     if req.method == 'POST':
@@ -227,6 +165,7 @@ def delete(req):
     else:
         return HttpResponse('Error')
 
+
 def recheckFares(threadName, id):
     
     while True:
@@ -239,15 +178,15 @@ def recheckFares(threadName, id):
                         'id' : search.id}
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+            result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
 
         
         print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
-        time.sleep(SECONDS * MINUTES * HOURS)
+        _t.sleep(SECONDS * MINUTES * HOURS)
     
 
 
-# threading._start_new_thread(recheckFares, ("New thread", 1))
+threading._start_new_thread(recheckFares, ("New thread", 1))
 
 
 def sendLowPriceText(search):
@@ -259,5 +198,5 @@ def sendLowPriceText(search):
                 'returningDate' : search.returnDate}
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
-    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
+    result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
     print(result.read())

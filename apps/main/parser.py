@@ -5,17 +5,6 @@ PRICE_REGEX = re.compile(r'^[0-9]\d+$')
 
 class MyParser(HTMLParser):
 
-    def __init__(self):
-
-        self.foundLineItem = False
-        self.foundDepartingTime = False
-        self.foundArrivalTime = False
-        self.foundDuration = False
-        self.foundFares = False
-        self.foundBusiness = False
-        self.foundAnytime = False
-        self.foundWannaGetAway = False
-
     def handle_starttag(self, tag, attrs):
         
         if tag == 'button':
@@ -24,83 +13,18 @@ class MyParser(HTMLParser):
                     if 'Wanna Get Away fare' in attr[1]:
                         self.foundWannaGetAway = True
 
-                        if self.mode == 'wholeDoc':
-                            self.documentData[self.flightNum].append('Wanna Get Away fare')
-                
-                    elif 'Business Select fare' in attr[1] and self.mode == 'wholeDoc':
-                        self.foundBusiness = True
-                        self.documentData[self.flightNum].append('Business Select fare')
-
-                    elif 'Anytime fare' in attr[1] and self.mode == 'wholeDoc':
-                        self.foundAnytime = True
-                        self.documentData[self.flightNum].append('Anytime fare')
-
-        if tag == 'li' and self.mode == 'wholeDoc':
-            for attr in attrs:
-                if attr[0] == 'class' and 'air-booking-select-detail' in attr[1]:
-                    self.foundLineItem = True
-                    self.documentData[self.flightNum] = []
-                    
-                    
-
-        if tag == 'div' and self.mode == 'wholeDoc':
-            for attr in attrs:
-                if attr[0] == 'class' and 'air-operations-time-status' in attr[1] and not self.foundArrivalTime and not self.foundDepartingTime:
-                    self.foundArrivalTime = True
-
-                elif attr[0] == 'class' and 'flight-stops--duration' in attr[1]:
-                    self.foundDuration = True
-
-
-
 
     def handle_data(self, data):
-        
         if self.foundWannaGetAway:
-            if self.mode == 'wanna':
-                self.rawFares.append(data)
-
-            else:
-                if PRICE_REGEX.match(data):
-                    self.documentData[self.flightNum].append(data)
-        
-
-        if self.foundBusiness or self.foundAnytime and self.mode == 'wholeDoc':
-            if PRICE_REGEX.match(data):
-                self.documentData[self.flightNum].append(data)
-
-        if self.foundArrivalTime and self.mode == 'wholeDoc':
-            self.documentData[self.flightNum].append(data)
-
-        if self.foundDuration and self.mode == 'wholeDoc':
-            self.documentData[self.flightNum].append(data)
-        
+            self.rawFares.append(data)
 
     def handle_endtag(self, tag):
         if tag == 'button':
             if self.foundWannaGetAway:
                 self.foundWannaGetAway = False
             
-            elif self.foundBusiness:
-                self.foundBusiness = False
-            
-            elif self.foundAnytime:
-                self.foundAnytime = False
-
-        
-        if tag == 'li' and self.foundLineItem:
-            self.foundLineItem = False
-            self.flightNum += 1
-
-        if tag == 'div' and self.foundArrivalTime:
-            self.foundArrivalTime = False
-
-        if tag == 'div' and self.foundDuration:
-            self.foundDuration = False
-        
 
     def findWannaGetAway(self, data):
-        self.mode = 'wanna'
         self.foundWannaGetAway = False
         self.rawFares = []
         self.prunedFares = []
@@ -137,61 +61,3 @@ class MyParser(HTMLParser):
         except:
             return "Error"
 
-
-    def parseDocument(self, data):
-        self.mode = 'wholeDoc'
-        # self.foundLineItem = False
-        # self.foundDepartingTime = False
-        # self.foundArrivalTime = False
-        # self.foundDuration = False
-        # self.foundFares = False
-        # self.foundBusiness = False
-        # self.foundAnytime = False
-        # self.foundWannaGetAway = False
-        self.flightNum = 0
-
-        self.documentData = {}
-
-        self.feed(data)
-
-        return self.cleanFlightData()
-
-        self.reset()
-
-
-    def cleanFlightData(self):
-        flights = []
-        for flightNum in self.documentData:
-            flights.append({})
-
-            flights[flightNum]['stops'] = -1
-            flights[flightNum]['business'] = -1
-            flights[flightNum]['anytime'] = -1
-            flights[flightNum]['wanna'] = -1
-
-            for idx in range(len(self.documentData[flightNum])):
-                data = self.documentData[flightNum][idx]
-
-                if 'Departs' in data:
-                    flights[flightNum]['departs'] = self.documentData[flightNum][idx + 1] + self.documentData[flightNum][idx + 2]
-
-                if 'Arrives' in data:
-                    flights[flightNum]['arrives'] = self.documentData[flightNum][idx + 1] + self.documentData[flightNum][idx + 2]
-
-                if 'Duration' in data:
-                    flights[flightNum]['duration'] = self.documentData[flightNum][idx + 1]
-                
-                if 'stop' in data:
-                    flights[flightNum]['stops'] = self.documentData[flightNum][idx][0   ]
-
-                if 'Business' in data:
-                    flights[flightNum]['business'] = self.documentData[flightNum][idx + 1]
-
-                if 'Anytime' in data:
-                    flights[flightNum]['anytime'] = self.documentData[flightNum][idx + 1] 
-
-                if 'Wanna' in data:
-                    flights[flightNum]['wanna'] = self.documentData[flightNum][idx + 1]
-             
-        print(flights)
-        return flights
