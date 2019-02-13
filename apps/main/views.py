@@ -17,6 +17,21 @@ def index(req):
     return HttpResponse('Hello world! This is the landing page for the SWA API :)')
 
 
+def getAllSearches(req):
+    searches = FareSearch.objects.all()
+
+    myList = []
+
+    for search in searches:
+        myList.append({'userEmail' : search.userEmail,
+                        'userPhone' : search.userPhone,
+                        'originAirport' : search.originAirport,
+                        'destinationAirport' : search.destinationAirport,
+                        'depart' : search.departureDate,
+                        'return' : search.returnDate })
+
+    return JsonResponse(myList, safe=False)
+
 @csrf_exempt
 def test(req):
     if req.method == "POST":
