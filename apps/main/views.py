@@ -194,7 +194,12 @@ def recheckFares(threadName, id):
                         'id' : search.id}
 
             encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
+
+            try:
+                result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+            
+            except:
+                print('Connection refused')
 
         
         print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
@@ -214,5 +219,5 @@ def sendLowPriceText(search):
                 'returningDate' : search.returnDate}
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
-    result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
+    result = urllib.request.urlopen('http://127.0.0.1:4000/sendLowPriceText', encoded)
     print(result.read())
