@@ -28,28 +28,27 @@ class FareSearchManager(models.Manager):
     
     def recheckFares():
     
-        while True:
-            searches = FareSearch.objects.all()
-            for search in searches:
-                postData = {'originAirport' : search.originAirport,
-                            'destinationAirport' : search.destinationAirport,
-                            'departingDate' : search.departureDate,
-                            'returningDate' : search.returnDate,
-                            'id' : search.id}
+        searches = FareSearch.objects.all()
+        for search in searches:
+            postData = {'originAirport' : search.originAirport,
+                        'destinationAirport' : search.destinationAirport,
+                        'departingDate' : search.departureDate,
+                        'returningDate' : search.returnDate,
+                        'id' : search.id}
 
-                print("post data is ", postData)
-                encoded = bytes( urllib.parse.urlencode(postData).encode() )
+            print("post data is ", postData)
+            encoded = bytes( urllib.parse.urlencode(postData).encode() )
 
-                try:
-                    result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
-                
-                except:
-                    print('Connection refused')
+            try:
+                result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+            
+            except:
+                print('Connection refused')
 
-                
-            print("Sleeping for ", 60, " seconds")
-            print('testing!! :)')
-            _t.sleep(60)
+            
+        print("Sleeping for ", 60, " seconds")
+        print('testing!! :)')
+        _t.sleep(60)
 
 
             
