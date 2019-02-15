@@ -10,5 +10,5 @@ urlpatterns = [
     url(r'^findSearches$', views.findSearches),
     url(r'^delete$', views.delete),
     url(r'^allSearches$', views.getAllSearches),
-    url(r'^startThread$', views.startThread)
+    url(r'^recheckFares', views.recheckFares)
 ]

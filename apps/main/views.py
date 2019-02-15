@@ -11,9 +11,7 @@ from .searchGenerator import *
 import json
 from multiprocessing import Process
 
-SECONDS = 60
-MINUTES = 60
-HOURS = 24
+
 
 def index(req):
     return HttpResponse('Hello world! This is the landing page for the SWA API :)')
@@ -109,14 +107,17 @@ def validateUserContact(req):
 
 @csrf_exempt
 def updateFareSearch(req):
+    print("updating fare search")
     if req.method == 'POST':
         parser = MyParser()
         parser.findWannaGetAway(req.POST['siteData'])
         
         if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
+            print("there's been an error with the parser")
             return HttpResponse("Failure")
         
         else:
+            print("parser success!!")
             search = FareSearch.objects.get(id = req.POST['id'])
             search.updatedAt = datetime.now()
 
@@ -129,12 +130,11 @@ def updateFareSearch(req):
 
             if parser.lowestPrice < search.lowestPrice:
                 search.lowestPrice = parser.lowestPrice
-                #LINE 127 BELONGS HERE INSTEAD. TESTING
+
+
+            sendLowPriceText(search)
 
             search.save()
-
-            #DONT FORGET TO CHANGE THIS
-            sendLowPriceText(search)
 
             print(search.lowestPrice)
 
@@ -194,44 +194,13 @@ def delete(req):
         return HttpResponse('Error')
 
 
-@start_new_thread
-def recheckFares():
-    
-    while True:
-        searches = FareSearch.objects.all()
-        for search in searches:
-            postData = {'originAirport' : search.originAirport,
-                        'destinationAirport' : search.destinationAirport,
-                        'departingDate' : search.departureDate,
-                        'returningDate' : search.returnDate,
-                        'id' : search.id}
-
-            encoded = bytes( urllib.parse.urlencode(postData).encode() )
-
-            try:
-                result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
-            
-            except:
-                print('Connection refused')
-
-        
-        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
-        _t.sleep(SECONDS * MINUTES * HOURS)
-
-recheckFares()
-    
-def startThread(req):
-    p = Process(target = recheckFares)
-    p.start()
-    return HttpResponse("Successfully started the new thread")
-
-
-
-
-
+def recheckFares(req):
+    FareSearchManager.recheckFares()
+    return HttpResponse("Success!")
 
 
 def sendLowPriceText(search):
+    print('sending a txt message request to node')
     postData = {'userPhone' : search.userPhone,
                 'userEmail' : search.userEmail,
                 'originAirport' : search.originAirport,

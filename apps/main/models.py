@@ -1,6 +1,14 @@
 from __future__ import unicode_literals
 from django.db import models
 import re
+import urllib
+import time as _t
+
+
+SECONDS = 60
+MINUTES = 60
+HOURS = 24
+
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
 PHONE_REGEX = re.compile(r'^\d{3}[-]\d{3}[-]\d{4}$')
@@ -18,6 +26,30 @@ class FareSearchManager(models.Manager):
         user = FareSearch.objects.filter(userPhone = postData['userPhone'])
         return (user, errors)
     
+    def recheckFares():
+    
+        while True:
+            searches = FareSearch.objects.all()
+            for search in searches:
+                postData = {'originAirport' : search.originAirport,
+                            'destinationAirport' : search.destinationAirport,
+                            'departingDate' : search.departureDate,
+                            'returningDate' : search.returnDate,
+                            'id' : search.id}
+
+                print("post data is ", postData)
+                encoded = bytes( urllib.parse.urlencode(postData).encode() )
+
+                try:
+                    result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
+                
+                except:
+                    print('Connection refused')
+
+                
+            print("Sleeping for ", 60, " seconds")
+            print('testing!! :)')
+            _t.sleep(60)
 
 
             
