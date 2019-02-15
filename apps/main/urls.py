@@ -10,5 +10,7 @@ urlpatterns = [
     url(r'^findSearches$', views.findSearches),
     url(r'^delete$', views.delete),
     url(r'^allSearches$', views.getAllSearches),
-    url(r'^recheckFares', views.recheckFares)
+    url(r'^recheckFares', views.recheckFares),
+    url(r'^allSearchIDs', views.getAllSearchIDs),
+    url(r'recheckFareWithID/(?P<fareID>\d+)$', views.recheckFareWithID)
 ]

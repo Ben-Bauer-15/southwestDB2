@@ -4,7 +4,7 @@ from .parser import *
 from .models import *
 from datetime import datetime
 from threading import Thread
-import urllib
+import urllib.request
 import time as _t
 from django.http import JsonResponse
 from .searchGenerator import *
@@ -130,9 +130,9 @@ def updateFareSearch(req):
 
             if parser.lowestPrice < search.lowestPrice:
                 search.lowestPrice = parser.lowestPrice
+                sendLowPriceText(search)
 
 
-            sendLowPriceText(search)
 
             search.save()
 
@@ -195,8 +195,50 @@ def delete(req):
 
 
 def recheckFares(req):
-    FareSearchManager.recheckFares()
+
+    searches = FareSearch.objects.all()
+    for search in searches:
+        postData = {'originAirport' : search.originAirport,
+                    'destinationAirport' : search.destinationAirport,
+                    'departingDate' : search.departureDate,
+                    'returningDate' : search.returnDate,
+                    'id' : search.id}
+
+        print("post data is ", postData)
+        encoded = bytes( urllib.parse.urlencode(postData).encode() )
+
+        result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+
+
     return HttpResponse("Success!")
+
+
+def recheckFareWithID(req, fareID):
+    search = FareSearch.objects.get(id = fareID)
+
+    postData = {'originAirport' : search.originAirport,
+                    'destinationAirport' : search.destinationAirport,
+                    'departingDate' : search.departureDate,
+                    'returningDate' : search.returnDate,
+                    'id' : search.id}
+
+    print("post data is ", postData)
+    encoded = bytes( urllib.parse.urlencode(postData).encode() )
+
+    result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+
+    return HttpResponse("Success!")
+
+
+
+def getAllSearchIDs(req):
+    searchIDs = []
+    searches = FareSearch.objects.all()
+    for search in searches:
+        print(search.id)
+        searchIDs.append(search.id)
+    
+    return JsonResponse(searchIDs, safe = False)
 
 
 def sendLowPriceText(search):
