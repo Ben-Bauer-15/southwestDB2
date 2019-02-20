@@ -19,4 +19,5 @@ urlpatterns = [
     url(r'^getTripsByDest/(?P<dest>\w+)$', views.getTripsByDest),
     url(r'^getTripsByDate/(?P<year>\d+)/(?P<month>\d+)/(?P<date>\d+)$', views.getTripsByDate),
     url(r'^getTripsByOrigAndDest/(?P<orig>\w+)/(?P<dest>\w+)$', views.getTripsByOrigAndDest),
+    url(r'^verifyTrip$', views.doesTripExist)
 ]

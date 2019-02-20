@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import urllib.request
 import urllib.parse
@@ -10,35 +10,50 @@ def getAllFlightSearches():
     
     searches = json.loads(result.read().decode('utf-8'))
 
-    for i in range(5):
+
+# change back to for i in range(len(searches)):
+    for i in range(len(searches)):
         search = searches[i]
+        print('search object is ', search)
         orig = search[0][0]
         dest = search[0][1]
 
-        for j in range(5):
+# change back to for j in range(len(search[1])):
+        for j in range(len(search[1])):
             date = search[1][j]
-            nodePostData = {
+
+            verificationData = {
                 'originAirport' : orig,
                 'destinationAirport' : dest,
                 'departingDate' : date,
                 'tripType' : 'oneWay'
-                }
-
-            nodeEncoded = bytes( urllib.parse.urlencode(nodePostData).encode() )
-            nodeRequest = urllib.request.urlopen('http://southwest.ben-bauer.net/startFareSearch', nodeEncoded)
-
-
-            djangoPostData = {
-                'destinationAirport' : dest,
-                'originAirport' : orig,
-                'date' : date,
-                'SWContent' : json.loads(nodeRequest.read().decode('utf-8'))['message']
             }
 
-            djangoEncoded = bytes( urllib.parse.urlencode(djangoPostData).encode() )
-            djangoRequest = urllib.request.urlopen('http://18.188.177.136/postFlightData', djangoEncoded)
+            verificationEncoded = bytes( urllib.parse.urlencode(verificationData).encode() )
+            verificationReq = urllib.request.urlopen('http://18.188.177.136/verifyTrip', verificationEncoded)
 
-            print(djangoRequest.read())
-            
+
+            if verificationReq.read().decode('utf-8') == 'True':
+                print("No searches!")
+
+
+                try:
+                    nodeRequest = urllib.request.urlopen('http://southwest.ben-bauer.net/startFareSearch', verificationEncoded)
+
+                    verificationData['SWContent'] = json.loads(nodeRequest.read().decode('utf-8'))['message']
+                    verificationEncoded = bytes( urllib.parse.urlencode(verificationData).encode() )
+                    
+
+                    djangoRequest = urllib.request.urlopen('http://18.188.177.136/postFlightData', verificationEncoded)
+
+                    print(djangoRequest.read())
+                
+                except:
+                    print('something went wrong')
+                    pass
+
+            else:
+                print('search already exists')
+                pass
 
 getAllFlightSearches()

@@ -235,7 +235,7 @@ def postFlightData(req):
         trip = Trip.objects.create(
             originAirport = req.POST['originAirport'],
             destinationAirport = req.POST['destinationAirport'],
-            tripDate = req.POST['date']
+            tripDate = req.POST['departingDate']
         )
         for flight in flightData:
             flight = Flight.objects.create(
@@ -305,13 +305,27 @@ def getTripsByOrigAndDest(req, orig, dest):
     
     return JsonResponse(response, safe = False)
 
-
-
 def generateSearches(req):
     generator = SearchGenerator()
     ALL_SEARCHES = generator.generateSearches()
     return JsonResponse(ALL_SEARCHES, safe = False)
 
+
+@csrf_exempt
+def doesTripExist(req):
+    if req.method == 'POST':
+        searches = Trip.objects.filter(
+            originAirport = req.POST['originAirport'],
+            destinationAirport = req.POST['destinationAirport'],
+            tripDate = req.POST['departingDate']
+            )
+        print('length of query results is ', len(searches))
+        if len(searches) > 0:
+            return HttpResponse(False)
+        else:
+            return HttpResponse(True)
+    else:
+        return HttpResponse("Failure")
 
 def assembleResponseData(allTrips):
 
