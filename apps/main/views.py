@@ -3,25 +3,14 @@ from django.views.decorators.csrf import csrf_exempt
 from .parser import *
 from .models import *
 from datetime import datetime
-from threading import Thread
 import urllib.request
-import time as _t
 from django.http import JsonResponse
 from .searchGenerator import *
 import json
-from multiprocessing import Process
-
 
 
 def index(req):
     return HttpResponse('Hello world! This is the landing page for the SWA API :)')
-
-def start_new_thread(function):
-    def decorator(*args, **kwargs):
-        t = Thread(target = function, args=args, kwargs=kwargs)
-        t.daemon = True
-        t.start()
-    return decorator
 
 
 def getAllSearches(req):
@@ -53,7 +42,9 @@ def test(req):
 def startFareSearch(req):
     if req.method == 'POST':
         parser = MyParser()
+        parser.myInit()
         parser.findWannaGetAway(req.POST['siteData'])
+        print(parser.lowestPrice)
 
         if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
             return HttpResponse("Failure")
@@ -68,8 +59,6 @@ def startFareSearch(req):
                 returnDate = req.POST['returningDate'],
                 lowestPrice = parser.lowestPrice
             )
-
-
 
             AveragePrice.objects.create(
                 search = search,
@@ -194,25 +183,6 @@ def delete(req):
         return HttpResponse('Error')
 
 
-def recheckFares(req):
-
-    searches = FareSearch.objects.all()
-    for search in searches:
-        postData = {'originAirport' : search.originAirport,
-                    'destinationAirport' : search.destinationAirport,
-                    'departingDate' : search.departureDate,
-                    'returningDate' : search.returnDate,
-                    'id' : search.id}
-
-        print("post data is ", postData)
-        encoded = bytes( urllib.parse.urlencode(postData).encode() )
-
-        result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
-
-
-    return HttpResponse("Success!")
-
-
 def recheckFareWithID(req, fareID):
     search = FareSearch.objects.get(id = fareID)
 
@@ -225,10 +195,9 @@ def recheckFareWithID(req, fareID):
     print("post data is ", postData)
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
 
-    result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+    result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
 
     return HttpResponse("Success!")
-
 
 
 def getAllSearchIDs(req):
@@ -252,4 +221,114 @@ def sendLowPriceText(search):
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
     result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
-    print(result.read())    
+    print(result.read())
+
+
+@csrf_exempt
+def postFlightData(req):
+
+    if req.method == 'POST':
+
+        parser = MyParser()
+        parser.myInit()
+        flightData = parser.processWholeDocument(req.POST['SWContent'])
+        trip = Trip.objects.create(
+            originAirport = req.POST['originAirport'],
+            destinationAirport = req.POST['destinationAirport'],
+            tripDate = req.POST['date']
+        )
+        for flight in flightData:
+            flight = Flight.objects.create(
+                departTime = flight['departs'],
+                arriveTime = flight['arrives'],
+                duration = flight['duration'],
+                businessFare = flight['business'],
+                anytimeFare = flight['anytime'],
+                wannaGetAwayFare = flight['wanna'],
+                numStops = flight['stops'],
+                trip = trip
+            )
+            print(flight)
+
+        print(trip)
+        return HttpResponse("Success")
+
+    else:
+        return HttpResponse("Error")
+
+
+def getAllTrips(req):
+    
+    allTrips = Trip.objects.all()
+
+    response = []
+
+    for trip in allTrips:
+        response.append([trip.originAirport, trip.destinationAirport, trip.tripDate])
+        for flight in trip.flights.all():
+            response[len(response) - 1].append({})
+            lastInResponse = response[len(response) - 1]
+            lastDict = lastInResponse[len(lastInResponse) - 1]
+            lastDict['departTime'] = flight.departTime
+            lastDict['arriveTime'] = flight.arriveTime
+            lastDict['duration'] = flight.duration
+            lastDict['businessFare'] = flight.businessFare
+            lastDict['anytimeFare'] = flight.anytimeFare
+            lastDict['wannaGetAwayFare'] = flight.wannaGetAwayFare
+            lastDict['numStops'] = flight.numStops
+    
+    return JsonResponse(response, safe = False)
+
+
+def getTripsByOrig(req, orig):
+    allTrips = Trip.objects.filter(originAirport = orig)
+    response = assembleResponseData(allTrips)
+
+    return JsonResponse(response, safe = False)
+
+def getTripsByDest(req, dest):
+    allTrips = Trip.objects.filter(destinationAirport = dest)
+    response = assembleResponseData(allTrips)
+    
+    return JsonResponse(response, safe = False)
+
+def getTripsByDate(req, year, month, date):
+
+    newDate = datetime(int(year), int(month), int(date))
+    allTrips = Trip.objects.filter(tripDate = newDate)
+    response = assembleResponseData(allTrips)
+    return JsonResponse(response, safe = False)
+
+def getTripsByOrigAndDest(req, orig, dest):
+    allTrips = Trip.objects.filter(originAirport = orig, destinationAirport = dest)
+    response = assembleResponseData(allTrips)
+    
+    return JsonResponse(response, safe = False)
+
+
+
+def generateSearches(req):
+    generator = SearchGenerator()
+    ALL_SEARCHES = generator.generateSearches()
+    return JsonResponse(ALL_SEARCHES, safe = False)
+
+
+def assembleResponseData(allTrips):
+
+    response = []
+
+    for trip in allTrips:
+        response.append([trip.originAirport, trip.destinationAirport, trip.tripDate])
+        for flight in trip.flights.all():
+            response[len(response) - 1].append({})
+            lastInResponse = response[len(response) - 1]
+            lastDict = lastInResponse[len(lastInResponse) - 1]
+            lastDict['departTime'] = flight.departTime
+            lastDict['arriveTime'] = flight.arriveTime
+            lastDict['duration'] = flight.duration
+            lastDict['businessFare'] = flight.businessFare
+            lastDict['anytimeFare'] = flight.anytimeFare
+            lastDict['wannaGetAwayFare'] = flight.wannaGetAwayFare
+            lastDict['numStops'] = flight.numStops
+    
+    return response

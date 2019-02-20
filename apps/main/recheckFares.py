@@ -4,7 +4,7 @@ import urllib.request
 import time as _t
 import json
 
-def activateFareChecking():
+def recheckFares():
     result = urllib.request.urlopen('http://18.188.177.136/allSearchIDs')
     ids = json.loads(result.read().decode('utf-8'))
     for searchId in ids:

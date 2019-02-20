@@ -30,7 +30,7 @@ class SearchGenerator():
 
         for i in range(len(self.airports) - 1):
             for j in range(i + 1, len(self.airports)):
-                self.combinations.append((self.airports[i], self.airports[j]))
+                self.combinations.append([self.airports[i], self.airports[j]])
 
 
     def maxFutureBookingMonth(self, monthNumber):
@@ -103,5 +103,6 @@ class SearchGenerator():
             self.searches[i].append([])
             for j in range(len(self.possibleBookingDates)):
                 self.searches[i][1].append(self.possibleBookingDates[j])
+
 
         return self.searches
