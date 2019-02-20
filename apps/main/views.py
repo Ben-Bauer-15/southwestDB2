@@ -3,54 +3,42 @@ from django.views.decorators.csrf import csrf_exempt
 from .parser import *
 from .models import *
 from datetime import datetime
-import threading
-import urllib
-import time
+from threading import Thread
+import urllib.request
+import time as _t
 from django.http import JsonResponse
 from .searchGenerator import *
-
+import json
+from multiprocessing import Process
 
 
 
 def index(req):
-    return HttpResponse('Hello world!')
+    return HttpResponse('Hello world! This is the landing page for the SWA API :)')
+
+def start_new_thread(function):
+    def decorator(*args, **kwargs):
+        t = Thread(target = function, args=args, kwargs=kwargs)
+        t.daemon = True
+        t.start()
+    return decorator
 
 
-def generateSearches(req):
-    scraper = SearchGenerator()
-    searches = scraper.generateSearches()
-    numSearches = 0
-    numDates = 0
-    while numSearches < 1:
-        # print(numSearches)  
-        airports = searches[numSearches][0]
-        originAirport = airports[0]
-        destinationAirport = airports[1]
-        dates = searches[numSearches][1]
-        while numDates < 1:
+def getAllSearches(req):
+    searches = FareSearch.objects.all()
 
-            date = dates[numDates]
-            
-            postData = {'originAirport' : originAirport,
-                        'destinationAirport' : destinationAirport,
-                        'departingDate' : date,
-                        'tripType' : 'oneWay'
-                        }
+    myList = []
 
+    for search in searches:
+        myList.append({'userEmail' : search.userEmail,
+                        'userPhone' : search.userPhone,
+                        'originAirport' : search.originAirport,
+                        'destinationAirport' : search.destinationAirport,
+                        'depart' : search.departureDate,
+                        'return' : search.returnDate,
+                        'lowestPrice' : search.lowestPrice })
 
-            encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://southwest.ben-bauer.net/startFareSearch', encoded)
-            parser = MyParser()
-            # parser.parseDocument()
-
-            numDates += 1
-        
-
-        numSearches += 1
-    return HttpResponse("Success!")
-
-
-
+    return JsonResponse(myList, safe=False)
 
 @csrf_exempt
 def test(req):
@@ -58,7 +46,7 @@ def test(req):
         return HttpResponse("Success")
 
     else:
-        return HttpResponse("error")
+        return HttpResponse("error. you should only be sending a POST request here")
 
 
 @csrf_exempt
@@ -82,6 +70,7 @@ def startFareSearch(req):
             )
 
 
+
             AveragePrice.objects.create(
                 search = search,
                 price = parser.averagePrice
@@ -91,11 +80,13 @@ def startFareSearch(req):
                 search = search,
                 price = parser.lowestPrice
             )
+            print(search)
 
             search.save()
 
             return HttpResponse("Created new search!")
-
+    else:
+        return HttpResponse("Error")
 
 @csrf_exempt
 def validateUserContact(req):
@@ -116,14 +107,17 @@ def validateUserContact(req):
 
 @csrf_exempt
 def updateFareSearch(req):
+    print("updating fare search")
     if req.method == 'POST':
         parser = MyParser()
         parser.findWannaGetAway(req.POST['siteData'])
         
         if parser.averagePrice == "Error" or parser.lowestPrice == "Error":
+            print("there's been an error with the parser")
             return HttpResponse("Failure")
         
         else:
+            print("parser success!!")
             search = FareSearch.objects.get(id = req.POST['id'])
             search.updatedAt = datetime.now()
 
@@ -137,7 +131,9 @@ def updateFareSearch(req):
             if parser.lowestPrice < search.lowestPrice:
                 search.lowestPrice = parser.lowestPrice
                 sendLowPriceText(search)
-            
+
+
+
             search.save()
 
             print(search.lowestPrice)
@@ -170,6 +166,8 @@ def findSearches(req):
     else:
         return HttpResponse("Error")
 
+
+
 @csrf_exempt
 def delete(req):
     if req.method == 'POST':
@@ -195,31 +193,56 @@ def delete(req):
     else:
         return HttpResponse('Error')
 
-def recheckFares(threadName, id):
-    SECONDS = 60
-    MINUTES = 60
-    HOURS = 24
-    while True:
-        searches = FareSearch.objects.all()
-        for search in searches:
-            postData = {'originAirport' : search.originAirport,
-                        'destinationAirport' : search.destinationAirport,
-                        'departingDate' : search.departureDate,
-                        'returningDate' : search.returnDate,
-                        'id' : search.id}
 
-            encoded = bytes( urllib.parse.urlencode(postData).encode() )
-            result = urllib.request.urlopen('http://southwest.ben-bauer.net/recheckFares', encoded)
+def recheckFares(req):
 
-        
-        print("Sleeping for ", SECONDS * MINUTES * HOURS, " seconds")
-        time.sleep(SECONDS * MINUTES * HOURS)
+    searches = FareSearch.objects.all()
+    for search in searches:
+        postData = {'originAirport' : search.originAirport,
+                    'destinationAirport' : search.destinationAirport,
+                    'departingDate' : search.departureDate,
+                    'returningDate' : search.returnDate,
+                    'id' : search.id}
+
+        print("post data is ", postData)
+        encoded = bytes( urllib.parse.urlencode(postData).encode() )
+
+        result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+
+
+    return HttpResponse("Success!")
+
+
+def recheckFareWithID(req, fareID):
+    search = FareSearch.objects.get(id = fareID)
+
+    postData = {'originAirport' : search.originAirport,
+                    'destinationAirport' : search.destinationAirport,
+                    'departingDate' : search.departureDate,
+                    'returningDate' : search.returnDate,
+                    'id' : search.id}
+
+    print("post data is ", postData)
+    encoded = bytes( urllib.parse.urlencode(postData).encode() )
+
+    result = urllib.request.urlopen('http://127.0.0.1:4000/recheckFares', encoded)
+
+    return HttpResponse("Success!")
+
+
+
+def getAllSearchIDs(req):
+    searchIDs = []
+    searches = FareSearch.objects.all()
+    for search in searches:
+        print(search.id)
+        searchIDs.append(search.id)
     
-
-# threading._start_new_thread(recheckFares, ("New thread", 1))
+    return JsonResponse(searchIDs, safe = False)
 
 
 def sendLowPriceText(search):
+    print('sending a txt message request to node')
     postData = {'userPhone' : search.userPhone,
                 'userEmail' : search.userEmail,
                 'originAirport' : search.originAirport,

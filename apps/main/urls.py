@@ -9,5 +9,8 @@ urlpatterns = [
     url(r'^updateFareSearch$', views.updateFareSearch),
     url(r'^findSearches$', views.findSearches),
     url(r'^delete$', views.delete),
-    url(r'^generateSearches$', views.generateSearches)
+    url(r'^allSearches$', views.getAllSearches),
+    url(r'^recheckFares', views.recheckFares),
+    url(r'^allSearchIDs', views.getAllSearchIDs),
+    url(r'recheckFareWithID/(?P<fareID>\d+)$', views.recheckFareWithID),
 ]

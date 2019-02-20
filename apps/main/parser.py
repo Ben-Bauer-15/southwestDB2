@@ -7,48 +7,24 @@ class MyParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         
-        if tag == 'button' and self.mode == 'wanna':
+        if tag == 'button':
             for attr in attrs:
-                if attr[0] == 'aria-label' and 'Wanna Get Away' in attr[1]:
-                    self.foundWannaGetAway = True
+                if attr[0] == 'aria-label':
+                    if 'Wanna Get Away fare' in attr[1]:
+                        self.foundWannaGetAway = True
 
-
-        if tag == 'li':
-            for attr in attrs:
-                if attr[0] == 'class' and 'air-booking-select-detail' in attr[1]:
-                    self.foundLineItem = True
-                    
-
-        if tag == 'div':
-            for attr in attrs:
-                if attr[0] == 'class' and 'air-operations-time-status' in attr[1] and not self.foundArrivalTime and not self.foundDepartingTime:
-                    self.foundArrivalTime = True
 
     def handle_data(self, data):
-        
-        if self.foundWannaGetAway and self.mode == 'wanna':
+        if self.foundWannaGetAway:
             self.rawFares.append(data)
 
-        if self.foundArrivalTime:
-            self.documentData.append(data)
-
-        
-
     def handle_endtag(self, tag):
-        if tag == 'button' and self.foundWannaGetAway and self.mode == 'wanna':
-            self.foundWannaGetAway = False
-
-        
-        if tag == 'li' and self.foundLineItem:
-            self.foundLineItem = False
-
-        if tag == 'div' and self.foundArrivalTime:
-            self.foundArrivalTime = False
-
-        
+        if tag == 'button':
+            if self.foundWannaGetAway:
+                self.foundWannaGetAway = False
+            
 
     def findWannaGetAway(self, data):
-        self.mode = 'wanna'
         self.foundWannaGetAway = False
         self.rawFares = []
         self.prunedFares = []
@@ -85,25 +61,3 @@ class MyParser(HTMLParser):
         except:
             return "Error"
 
-
-    def parseDocument(self, data):
-        self.mode = 'wholeDoc'
-        self.foundLineItem = False
-        self.foundDepartingTime = False
-        self.foundArrivalTime = False
-        self.foundDuration = False
-        self.foundFares = False
-        self.foundBusiness = False
-        self.foundAnytime = False
-        self.foundWannaGetAway = False
-
-        self.documentData = []
-
-        self.feed(data)
-
-        print(self.documentData)
-
-        self.reset()
-
-    # def determineState(self):
-    #     if 
