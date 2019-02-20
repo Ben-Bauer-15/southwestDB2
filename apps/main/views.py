@@ -229,4 +229,4 @@ def sendLowPriceText(search):
 
     encoded = bytes( urllib.parse.urlencode(postData).encode() )
     result = urllib.request.urlopen('http://southwest.ben-bauer.net/sendLowPriceText', encoded)
-    print(result.read())
+    print(result.read())    
